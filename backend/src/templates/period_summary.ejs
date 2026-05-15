@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Period Summary</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      margin: 40px;
+      color: #333;
+    }
+    .header { text-align: center; margin-bottom: 28px; }
+    .info { margin-bottom: 18px; line-height: 1.6; }
+    h2 { margin: 0 0 8px; }
+    h3 { margin: 18px 0 8px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #f4f4f4; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
+    .total {
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .footer { margin-top: 30px; text-align: right; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>สรุปรายรับตามช่วงเวลา</h2>
+    <div class="info">
+      <b>ช่วงวันที่:</b> <%= reportStart %> - <%= reportEnd %><br>
+      <b>ผู้จัดทำ:</b> <%= generatedBy || '-' %>
+    </div>
+  </div>
+
+  <h3>สรุปยอดตามช่องทางชำระเงิน</h3>
+  <table>
+    <thead>
+      <tr>
+        <th class="text-left">ช่องทางชำระเงิน</th>
+        <th>ยอดรวม (บาท)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% payments.forEach(function(payment) { %>
+      <tr>
+        <td class="text-left"><%= payment.payment_method %></td>
+        <td><%= payment.total %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="text-right total">รวมทั้งสิ้น</td>
+        <td class="total"><%= grandTotal %></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <h3>สรุปยอดขายตามเมนู</h3>
+  <table>
+    <thead>
+      <tr>
+        <th class="text-left">เมนู</th>
+        <th>จำนวนแก้ว</th>
+        <th>ยอดรวม (บาท)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% items.forEach(function(item) { %>
+      <tr>
+        <td class="text-left"><%= item.product_name %></td>
+        <td><%= item.total_qty %></td>
+        <td><%= item.total_amount %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <div>เอกสารสรุปรายรับตามช่วงเวลา</div>
+  </div>
+</body>
+</html>

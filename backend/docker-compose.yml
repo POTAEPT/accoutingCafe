@@ -1,0 +1,20 @@
+services:
+  db:
+    # เลือกใช้ image รุ่น alpine เพราะมีขนาดเล็กมาก ลดพื้นที่โจมตี (Attack Surface) ได้ดีในมุม Security
+    image: postgres:15-alpine 
+    container_name: drink_sales_pg
+    restart: always
+    
+    environment:
+     POSTGRES_USER: ${DB_USER}
+     POSTGRES_PASSWORD: ${DB_PASSWORD}
+     POSTGRES_DB: ${DB_NAME}
+    ports:
+      # Map Port จากเครื่อง Ubuntu ของเรา (ซ้าย) ให้ชี้เข้าไปที่ Port ของ Database ใน Container (ขวา)
+      - "5432:5432"
+    volumes:
+      # สร้าง Volume เก็บข้อมูลจำลองไว้ที่เครื่องเรา เพื่อป้องกันไม่ให้ข้อมูลหายเวลาเราเผลอลบ Container ทิ้ง
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
