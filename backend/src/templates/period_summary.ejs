@@ -31,6 +31,8 @@
     <h2>สรุปรายรับตามช่วงเวลา</h2>
     <div class="info">
       <b>ช่วงวันที่:</b> <%= reportStart %> - <%= reportEnd %><br>
+      <b>จำนวนรายการ:</b> <%= items.length %> รายการ<br>
+      <b>จำนวนรวมทั้งสิ้น:</b> <%= grandTotalQty %> แก้ว<br>
       <b>ผู้จัดทำ:</b> <%= generatedBy || '-' %>
     </div>
   </div>
@@ -77,6 +79,13 @@
       </tr>
       <% }); %>
     </tbody>
+    <tfoot>
+      <tr>
+        <td class="text-right total">รวมทั้งสิ้น</td>
+        <td class="total"><%= grandTotalQty %> แก้ว</td>
+        <td class="total"><%= grandTotal %> บาท</td>
+      </tr>
+    </tfoot>
   </table>
 
   <div class="footer">

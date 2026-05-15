@@ -93,9 +93,9 @@ function Dashboard() {
   }, [activeTab])
 
   const totals = useMemo(() => {
-    const totalSales = transactions.length
+    const totalQty = transactions.reduce((sum, item) => sum + Number(item.total_qty || 0), 0)
     const totalAmount = transactions.reduce((sum, item) => sum + Number(item.total_amount || 0), 0)
-    return { totalSales, totalAmount }
+    return { totalQty, totalAmount }
   }, [transactions])
 
   const handleDailySummary = async () => {
@@ -608,9 +608,9 @@ function Dashboard() {
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Total Sales</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-800">{totals.totalSales}</p>
-                  <p className="text-xs text-slate-500">transactions</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Total Cups</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-800">{totals.totalQty}</p>
+                  <p className="text-xs text-slate-500">cups sold</p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Total Amount</p>

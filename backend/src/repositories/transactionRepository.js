@@ -1,6 +1,7 @@
 const { pool } = require('./dbProvider');
-const getTransactionByReceiptNo = async (receiptNo) => {
-  const result = await pool.query('SELECT * FROM transactions WHERE receipt_no = $1', [receiptNo]);
+const getTransactionByReceiptNo = async (receiptNo, db) => {
+  const client = db || pool;
+  const result = await client.query('SELECT * FROM transactions WHERE receipt_no = $1', [receiptNo]);
   return result.rows[0];
 };
 
@@ -71,7 +72,14 @@ const updateStatus = async (id, status) => {
 const listTransactionsByDate = async ({ date, startDate, endDate }) => {
   if (startDate && endDate) {
     const result = await pool.query(
-      'SELECT * FROM transactions WHERE DATE(created_at) BETWEEN $1 AND $2 ORDER BY created_at DESC',
+      `
+        SELECT t.*, COALESCE(SUM(ti.quantity), 0) AS total_qty
+        FROM transactions t
+        LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
+        WHERE DATE(t.created_at) BETWEEN $1 AND $2
+        GROUP BY t.id
+        ORDER BY t.created_at DESC
+      `,
       [startDate, endDate]
     );
     return result.rows;
@@ -79,13 +87,28 @@ const listTransactionsByDate = async ({ date, startDate, endDate }) => {
 
   if (date) {
     const result = await pool.query(
-      'SELECT * FROM transactions WHERE DATE(created_at) = $1 ORDER BY created_at DESC',
+      `
+        SELECT t.*, COALESCE(SUM(ti.quantity), 0) AS total_qty
+        FROM transactions t
+        LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
+        WHERE DATE(t.created_at) = $1
+        GROUP BY t.id
+        ORDER BY t.created_at DESC
+      `,
       [date]
     );
     return result.rows;
   }
 
-  const result = await pool.query('SELECT * FROM transactions ORDER BY created_at DESC');
+  const result = await pool.query(
+    `
+      SELECT t.*, COALESCE(SUM(ti.quantity), 0) AS total_qty
+      FROM transactions t
+      LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
+      GROUP BY t.id
+      ORDER BY t.created_at DESC
+    `
+  );
   return result.rows;
 };
 

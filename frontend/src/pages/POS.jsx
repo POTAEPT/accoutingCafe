@@ -25,6 +25,8 @@ function POS() {
   const [selectedSweetness, setSelectedSweetness] = useState('100')
   const [paymentMethod, setPaymentMethod] = useState('CASH')
   const [recordDate, setRecordDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [isManualId, setIsManualId] = useState(false)
+  const [manualReceiptNo, setManualReceiptNo] = useState('')
 
   const loadMenu = async () => {
     setIsLoadingMenu(true)
@@ -144,6 +146,10 @@ function POS() {
     return cart.reduce((sum, entry) => sum + entry.price * entry.qty, 0)
   }, [cart])
 
+  const totalQty = useMemo(() => {
+    return cart.reduce((sum, entry) => sum + entry.qty, 0)
+  }, [cart])
+
   const handleCheckout = async () => {
     if (cart.length === 0) return
     setIsSubmitting(true)
@@ -152,6 +158,7 @@ function POS() {
       const payload = {
         payment_method: paymentMethod,
         record_date: recordDate,
+        manual_receipt_no: isManualId ? manualReceiptNo : null,
         items: cart.map((entry) => {
           const variantLabel = getVariantLabel(entry.variant)
           const nameSuffix = entry.variant ? ` (${variantLabel})` : ''
@@ -194,23 +201,24 @@ function POS() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="h-screen bg-slate-50 text-slate-900 font-sans flex flex-col overflow-hidden">
       <header className="bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-slate-400">Coffee Shop</p>
-            <h1 className="text-2xl font-bold">POS Register</h1>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+            <div>
+              <p className="text-sm uppercase tracking-[0.25em] text-slate-400">Coffee Shop</p>
+              <h1 className="text-2xl font-bold">POS Register</h1>
+            </div>
+            <div className="flex items-center gap-3 sm:border-l sm:border-slate-200 sm:pl-6">
+              <label className="text-[10px] uppercase font-bold text-slate-400">Record Date</label>
+              <input
+                type="date"
+                value={recordDate}
+                onChange={(event) => setRecordDate(event.target.value)}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
-          {/* ✅ ย้ายช่องเลือกวันที่มาไว้ตรงนี้ */}
-      <div className="hidden sm:block border-l border-slate-200 pl-6">
-        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Transaction Date</label>
-        <input
-          type="date"
-          value={recordDate}
-          onChange={(e) => setRecordDate(e.target.value)}
-          className="bg-slate-50 border-none text-sm font-semibold focus:ring-0 cursor-pointer"
-        />
-      </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => navigate('/dashboard')}
@@ -228,8 +236,8 @@ function POS() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-        <section className="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-100 p-6">
+      <main className="max-w-6xl mx-auto px-6 py-6 grid gap-6 lg:grid-cols-[1.35fr_0.65fr] flex-1 overflow-hidden">
+        <section className="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-100 p-6 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-semibold">เมนูเครื่องดื่ม</h2>
@@ -257,177 +265,197 @@ function POS() {
               {menuError}
             </div>
           ) : null}
-          {isLoadingMenu ? (
-            <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
-              กำลังโหลดเมนู...
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredItems.map((item) => {
-                const prices = normalizePrices(item.prices)
-                const priceList = getVariantOptions(prices)
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleMenuClick(item)}
-                    className="group text-left rounded-xl border border-slate-100 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base font-semibold text-slate-800 group-hover:text-slate-900">
-                        {item.name}
-                      </h3>
-                      {priceList.length === 1 ? (
-                        <span className="text-sm font-semibold text-blue-600">฿{Number(prices[priceList[0]])}</span>
-                      ) : (
-                        <span className="text-xs font-semibold text-slate-400">Multiple</span>
-                      )}
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      {priceList.map((key) => (
-                        <span key={`${item.id}-${key}`} className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
-                          {getVariantLabel(key)} ฿{Number(prices[key])}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                      <span>{item.category}</span>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">เพิ่ม +</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+            {isLoadingMenu ? (
+              <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
+                กำลังโหลดเมนู...
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredItems.map((item) => {
+                  const prices = normalizePrices(item.prices)
+                  const priceList = getVariantOptions(prices)
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleMenuClick(item)}
+                      className="group text-left rounded-xl border border-slate-100 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-semibold text-slate-800 group-hover:text-slate-900">
+                          {item.name}
+                        </h3>
+                        {priceList.length === 1 ? (
+                          <span className="text-sm font-semibold text-blue-600">฿{Number(prices[priceList[0]])}</span>
+                        ) : (
+                          <span className="text-xs font-semibold text-slate-400">Multiple</span>
+                        )}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                        {priceList.map((key) => (
+                          <span key={`${item.id}-${key}`} className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
+                            {getVariantLabel(key)} ฿{Number(prices[key])}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+                        <span>{item.category}</span>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">เพิ่ม +</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </section>
 
-        <aside className="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-100 p-6 flex flex-col">
+        <aside className="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-100 p-6 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold">ตะกร้าสินค้า</h2>
               <p className="text-sm text-slate-500">รายการที่เลือก</p>
             </div>
-            <span className="text-xs text-slate-400">{cart.length} รายการ</span>
+            <span className="text-xs text-slate-400">{cart.length} รายการ ({totalQty} แก้ว)</span>
           </div>
-
-          <div className="mt-6 flex-1 space-y-3">
+          <div className="mt-6 flex-1 overflow-y-auto custom-scrollbar pr-1">
             {cart.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
                 ยังไม่มีสินค้าในตะกร้า
               </div>
             ) : (
-              cart.map((entry) => (
-                <div
-                  key={entry.key}
-                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-semibold text-slate-800">
-                        {entry.name}
-                        {entry.variant ? ` (${getVariantLabel(entry.variant)})` : ''}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        ฿{entry.price} ต่อแก้ว
-                        {entry.sweetness ? ` • ${entry.sweetness}%` : ''}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeItem(entry.key)}
-                      className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                    >
-                      ลบ
-                    </button>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-2">
+              <div className="space-y-3">
+                {cart.map((entry) => (
+                  <div
+                    key={entry.key}
+                    className="rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-800">
+                          {entry.name}
+                          {entry.variant ? ` (${getVariantLabel(entry.variant)})` : ''}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          ฿{entry.price} ต่อแก้ว
+                          {entry.sweetness ? ` • ${entry.sweetness}%` : ''}
+                        </p>
+                      </div>
                       <button
-                        onClick={() => decreaseItem(entry.key)}
-                        className="h-7 w-7 rounded-full border border-slate-200 text-slate-500 hover:bg-white transition-colors"
+                        onClick={() => removeItem(entry.key)}
+                        className="text-xs text-red-400 hover:text-red-600 transition-colors"
                       >
-                        -
-                      </button>
-                      <span className="text-sm font-semibold w-4 text-center">{entry.qty}</span>
-                      <button
-                        onClick={() => addToCart(entry)}
-                        className="h-7 w-7 rounded-full border border-slate-200 text-slate-500 hover:bg-white transition-colors"
-                      >
-                        +
+                        ลบ
                       </button>
                     </div>
-                    <span className="text-sm font-semibold text-blue-600">฿{entry.price * entry.qty}</span>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => decreaseItem(entry.key)}
+                          className="h-7 w-7 rounded-full border border-slate-200 text-slate-500 hover:bg-white transition-colors"
+                        >
+                          -
+                        </button>
+                        <span className="text-sm font-semibold w-4 text-center">{entry.qty}</span>
+                        <button
+                          onClick={() => addToCart(entry)}
+                          className="h-7 w-7 rounded-full border border-slate-200 text-slate-500 hover:bg-white transition-colors"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span className="text-sm font-semibold text-blue-600">฿{entry.price * entry.qty}</span>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
 
-          <div className="mt-6 border-t border-slate-100 pt-4">
-            <div className="flex items-center justify-between text-base font-bold mt-2">
-              <span>ยอดรวมทั้งสิ้น</span>
-              <span className="text-xl text-blue-600">฿{total}</span>
+          <div className="flex-shrink-0">
+            <div className="mt-6 border-t border-slate-100 pt-4">
+              <div className="flex items-center justify-between text-sm text-slate-500">
+                <span>จำนวนทั้งหมด</span>
+                <span className="font-semibold text-slate-700">{totalQty} แก้ว</span>
+              </div>
+              <div className="flex items-center justify-between text-base font-bold mt-2">
+                <span>ยอดรวมทั้งสิ้น</span>
+                <span className="text-xl text-blue-600">฿{total}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-sm text-slate-500">
+                <span>Payment method</span>
+                <span className="font-semibold text-slate-700">
+                  {paymentMethod === 'CASH' ? 'Cash (เงินสด)' : 'Transfer (โอนเงิน)'}
+                </span>
+              </div>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm text-slate-500">
-              <span>Payment method</span>
-              <span className="font-semibold text-slate-700">
-                {paymentMethod === 'CASH' ? 'Cash (เงินสด)' : 'Transfer (โอนเงิน)'}
-              </span>
+
+            <div className="mt-6 border-t border-slate-100 pt-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Payment Method</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('CASH')}
+                  disabled={isSubmitting}
+                  className={`rounded-xl py-3 text-sm font-semibold transition-all ${
+                    paymentMethod === 'CASH'
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  }`}
+                >
+                  Cash (เงินสด)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('TRANSFER')}
+                  disabled={isSubmitting}
+                  className={`rounded-xl py-3 text-sm font-semibold transition-all ${
+                    paymentMethod === 'TRANSFER'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                      : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  }`}
+                >
+                  Transfer (โอนเงิน)
+                </button>
+              </div>
             </div>
+
+            <div className="mt-6 border-t border-slate-100 pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={isManualId}
+                    onChange={(event) => setIsManualId(event.target.checked)}
+                    disabled={isSubmitting}
+                  />
+                  ระบุเลขที่บิลเอง (Manual ID)
+                </label>
+              </div>
+              <input
+                type="text"
+                value={manualReceiptNo}
+                onChange={(event) => setManualReceiptNo(event.target.value)}
+                disabled={!isManualId || isSubmitting}
+                placeholder="เช่น 1, 2, 3"
+                className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+              />
+            </div>
+
+            {status ? (
+              <div className={`mt-4 rounded-lg text-sm px-4 py-3 font-medium ${status.includes('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                {status}
+              </div>
+            ) : null}
+
+            <button
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isSubmitting}
+              className="mt-4 w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 disabled:opacity-50 disabled:shadow-none"
+            >
+              {isSubmitting ? 'กำลังบันทึก...' : 'คิดเงิน / ชำระเงิน'}
+            </button>
           </div>
-
-          <div className="mt-6 border-t border-slate-100 pt-4">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Record Date</h3>
-            <input
-              type="date"
-              value={recordDate}
-              onChange={(event) => setRecordDate(event.target.value)}
-              disabled={isSubmitting}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
-            />
-          </div>
-
-          <div className="mt-6 border-t border-slate-100 pt-4">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Payment Method</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('CASH')}
-                disabled={isSubmitting}
-                className={`rounded-xl py-3 text-sm font-semibold transition-all ${
-                  paymentMethod === 'CASH'
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
-                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                }`}
-              >
-                Cash (เงินสด)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('TRANSFER')}
-                disabled={isSubmitting}
-                className={`rounded-xl py-3 text-sm font-semibold transition-all ${
-                  paymentMethod === 'TRANSFER'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200'
-                }`}
-              >
-                Transfer (โอนเงิน)
-              </button>
-            </div>
-          </div>
-
-          {status ? (
-            <div className={`mt-4 rounded-lg text-sm px-4 py-3 font-medium ${status.includes('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-              {status}
-            </div>
-          ) : null}
-
-          <button
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || isSubmitting}
-            className="mt-4 w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 disabled:opacity-50 disabled:shadow-none"
-          >
-            {isSubmitting ? 'กำลังบันทึก...' : 'คิดเงิน / ชำระเงิน'}
-          </button>
         </aside>
       </main>
 
@@ -471,7 +499,7 @@ function POS() {
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Sweetness</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {['25', '50', '100'].map((level) => (
+                    {['0','25', '50', '100'].map((level) => (
                       <button
                         key={level}
                         onClick={() => setSelectedSweetness(level)}

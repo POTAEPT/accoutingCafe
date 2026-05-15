@@ -9,6 +9,8 @@ const generateDailySummaryPDF = async (date, username) => {
 
   // 2. คำนวณ Logic บัญชีเพิ่มเติม (เช่น ยอดรวม Grand Total)
   const grandTotal = payments.reduce((acc, curr) => acc + parseFloat(curr.total), 0).toFixed(2);
+  const grandTotalQty = items.reduce((acc, item) => acc + Number(item.total_qty || 0), 0);
+  const uniqueItemCount = items.length;
   const formattedDate = new Date(date).toLocaleDateString('th-TH', { 
     year: 'numeric', month: 'long', day: 'numeric' 
   });
@@ -20,6 +22,8 @@ const generateDailySummaryPDF = async (date, username) => {
     payments,
     items,
     grandTotal,
+    grandTotalQty,
+    uniqueItemCount,
     generatedBy: username
   });
 
@@ -41,6 +45,8 @@ const generatePeriodSummaryPDF = async (startDate, endDate, username) => {
   const { payments, items } = await reportRepo.getPeriodSummaryData(startDate, endDate);
 
   const grandTotal = payments.reduce((acc, curr) => acc + parseFloat(curr.total), 0).toFixed(2);
+  const grandTotalQty = items.reduce((acc, item) => acc + Number(item.total_qty || 0), 0);
+  const uniqueItemCount = items.length;
   const formattedStart = new Date(startDate).toLocaleDateString('th-TH', {
     year: 'numeric', month: 'long', day: 'numeric'
   });
@@ -55,6 +61,8 @@ const generatePeriodSummaryPDF = async (startDate, endDate, username) => {
     payments,
     items,
     grandTotal,
+    grandTotalQty,
+    uniqueItemCount,
     generatedBy: username
   });
 

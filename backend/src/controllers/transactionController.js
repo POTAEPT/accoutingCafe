@@ -1,7 +1,7 @@
 const transactionService = require('../services/transactionService');
 
 const createTransaction = async (request, reply) => {
-  const { payment_method, items, record_date } = request.body || {};
+  const { payment_method, items, record_date, manual_receipt_no } = request.body || {};
 
   if (!Array.isArray(items) || items.length === 0) {
     return reply.code(400).send({ error: 'ต้องมีรายการสินค้าอย่างน้อย 1 รายการ' });
@@ -11,7 +11,8 @@ const createTransaction = async (request, reply) => {
     const result = await transactionService.createTransaction({
       payment_method,
       items,
-      record_date
+      record_date,
+      manual_receipt_no
     });
 
     return reply.code(201).send({

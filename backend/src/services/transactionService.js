@@ -2,7 +2,7 @@ const { pool } = require('../db');
 const { getDb } = require('../repositories/dbProvider');
 const transactionRepository = require('../repositories/transactionRepository');
 
-const createTransaction = async ({ payment_method, items, record_date }) => {
+const createTransaction = async ({ payment_method, items, record_date, manual_receipt_no }) => {
   const client = await pool.connect();
 
   try {
@@ -19,9 +19,20 @@ const createTransaction = async ({ payment_method, items, record_date }) => {
     const dbDateStr = targetDate.toISOString().slice(0, 10);
 
     const db = getDb(client);
-    const count = await transactionRepository.countTransactionsByDate(db, dbDateStr);
-    const orderNum = count + 1;
-    const receipt_no = `INV-${dateStr}-${String(orderNum).padStart(3, '0')}`;
+    let receipt_no;
+    if (manual_receipt_no && String(manual_receipt_no).trim()) {
+      receipt_no = String(manual_receipt_no).trim();
+      const existing = await transactionRepository.getTransactionByReceiptNo(receipt_no, db);
+      if (existing) {
+        const error = new Error('เลขที่บิลซ้ำ');
+        error.statusCode = 409;
+        throw error;
+      }
+    } else {
+      const count = await transactionRepository.countTransactionsByDate(db, dbDateStr);
+      const orderNum = count + 1;
+      receipt_no = `INV-${dateStr}-${String(orderNum).padStart(3, '0')}`;
+    }
 
     let total_amount = 0;
     const normalizedItems = items.map((item) => {
