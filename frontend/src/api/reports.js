@@ -22,6 +22,11 @@ export const getTransactions = async ({ date, startDate, endDate } = {}) => {
   return response.data
 }
 
+export const getTransactionItems = async (id) => {
+  const response = await api.get(`/transactions/${id}/items`)
+  return response.data
+}
+
 export const downloadReceipt = async (receiptNo) => {
   const response = await api.get(`/export/${receiptNo}`, {
     responseType: 'blob'

@@ -19,6 +19,7 @@ fastify.register(require('./routes/transactions'))
 fastify.register(require('./routes/export.js'))
 fastify.register(require('./routes/reportRoutes'))
 fastify.register(require('./routes/products'))
+fastify.register(require('./routes/addons'))
 // -------------------------
 
 fastify.get('/', async (request, reply) => {

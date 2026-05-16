@@ -12,6 +12,11 @@ async function transactionRoutes(fastify, options) {
     handler: transactionController.getTransactions
   });
 
+  fastify.get('/api/transactions/:id/items', {
+    preHandler: authenticate,
+    handler: transactionController.getTransactionItems
+  });
+
   fastify.delete('/api/transactions/:id', {
     preHandler: authenticate,
     handler: transactionController.deleteTransaction

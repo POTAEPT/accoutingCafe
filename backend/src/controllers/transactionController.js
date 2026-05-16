@@ -74,9 +74,28 @@ const getTransactions = async (request, reply) => {
   }
 };
 
+const getTransactionItems = async (request, reply) => {
+  const { id } = request.params;
+  if (!id) {
+    return reply.code(400).send({ error: 'ต้องระบุรายการบิล' });
+  }
+
+  try {
+    const items = await transactionService.getTransactionItems(id);
+    return reply.send({ data: items });
+  } catch (err) {
+    if (err.message === 'NOT_FOUND') {
+      return reply.code(404).send({ error: 'ไม่พบเลขที่บิลนี้' });
+    }
+    request.log.error(err);
+    return reply.code(500).send({ error: 'Internal Server Error' });
+  }
+};
+
 module.exports = {
   createTransaction,
   voidTransaction,
   getTransactions,
-  deleteTransaction
+  deleteTransaction,
+  getTransactionItems
 };

@@ -14,19 +14,38 @@ const generateReceiptPdf = async ({ receiptNo, recorder }) => {
 
   const items = await transactionRepository.getItemsByTransactionId(transaction.id);
   const variantLabels = {
-    hot: 'Hot',
-    iced: 'Iced',
-    frappe: 'Frappe',
-    regular: 'Regular'
+    hot: 'ร้อน',
+    iced: 'เย็น',
+    frappe: 'ปั่น',
+    regular: 'ปกติ'
+  };
+  const normalizeDetailParts = (parts, baseName) => {
+    if (!baseName) return parts;
+    return parts.filter((part) => part && !baseName.includes(part));
+  };
+  const appendToExistingDetails = (baseName, partsToAdd) => {
+    if (!partsToAdd.length) return baseName;
+    const start = baseName.indexOf('(');
+    const end = baseName.lastIndexOf(')');
+    if (start === -1 || end === -1 || end <= start) {
+      return `${baseName} (${partsToAdd.join(', ')})`;
+    }
+    const head = baseName.slice(0, end);
+    const tail = baseName.slice(end);
+    return `${head}, ${partsToAdd.join(', ')}${tail}`;
   };
   const formattedItems = items.map((item) => {
     const variantLabel = item.product_variant ? (variantLabels[item.product_variant] || item.product_variant) : '';
-    const sweetnessLabel = item.sweetness ? `${item.sweetness}% Sweet` : '';
+    const sweetnessLabel = item.sweetness ? `หวาน ${item.sweetness}%` : '';
     const detailParts = [variantLabel, sweetnessLabel].filter(Boolean);
-    const detailText = detailParts.length > 0 ? ` (${detailParts.join(', ')})` : '';
+    const filteredParts = normalizeDetailParts(detailParts, item.product_name || '');
+    const hasDetails = (item.product_name || '').includes('(') && (item.product_name || '').includes(')');
+    const displayName = hasDetails
+      ? appendToExistingDetails(item.product_name, filteredParts)
+      : `${item.product_name}${filteredParts.length ? ` (${filteredParts.join(', ')})` : ''}`;
     return {
       ...item,
-      display_name: `${item.product_name}${detailText}`
+      display_name: displayName
     };
   });
 

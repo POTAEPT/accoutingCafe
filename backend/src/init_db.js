@@ -48,6 +48,8 @@ const initDB = async () => {
       category VARCHAR(100) NOT NULL,
       prices JSONB NOT NULL,
       has_sweetness BOOLEAN DEFAULT TRUE,
+      allow_roast BOOLEAN DEFAULT TRUE,
+      allow_addons BOOLEAN DEFAULT TRUE,
       is_active BOOLEAN DEFAULT TRUE
     );
   `;
@@ -55,6 +57,8 @@ const initDB = async () => {
   const migrateProductsTableQuery = `
     ALTER TABLE products ADD COLUMN IF NOT EXISTS prices JSONB;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS has_sweetness BOOLEAN DEFAULT TRUE;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS allow_roast BOOLEAN DEFAULT TRUE;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS allow_addons BOOLEAN DEFAULT TRUE;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
     DO $$
     BEGIN
@@ -68,6 +72,42 @@ const initDB = async () => {
       END IF;
     END $$;
     ALTER TABLE products DROP COLUMN IF EXISTS price;
+  `;
+
+  const createAddonsTableQuery = `
+    CREATE TABLE IF NOT EXISTS addons (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name VARCHAR(255) NOT NULL,
+      price DECIMAL(10,2) NOT NULL,
+      category VARCHAR(20) NOT NULL,
+      UNIQUE (name, category),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const migrateAddonsTableQuery = `
+    ALTER TABLE addons ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+    ALTER TABLE addons ADD COLUMN IF NOT EXISTS price DECIMAL(10,2);
+    ALTER TABLE addons ADD COLUMN IF NOT EXISTS category VARCHAR(20);
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'addons_name_category_key'
+      ) THEN
+        ALTER TABLE addons ADD CONSTRAINT addons_name_category_key UNIQUE (name, category);
+      END IF;
+    END $$;
+  `;
+
+  const seedAddonsQuery = `
+    INSERT INTO addons (name, price, category) VALUES
+    ('ปกติ', 0, 'roast'),
+    ('คั่วอ่อน', 30, 'roast'),
+    ('คั่วเข้ม', 40, 'roast'),
+    ('เพิ่มช็อต', 20, 'addon'),
+    ('เพิ่มไซรัป', 10, 'addon')
+    ON CONFLICT (name, category) DO NOTHING;
   `;
 
   const seedProductsQuery = `
@@ -113,7 +153,10 @@ const initDB = async () => {
     await pool.query(migrateTransactionItemsQuery);
     await pool.query(createProductsTableQuery);
     await pool.query(migrateProductsTableQuery);
+    await pool.query(createAddonsTableQuery);
+    await pool.query(migrateAddonsTableQuery);
     await pool.query(seedProductsQuery);
+    await pool.query(seedAddonsQuery);
     console.log('✅ Database is ready with Thai menu!');
   } catch (err) {
     console.error('❌ Error:', err.message);

@@ -123,9 +123,18 @@ const getTransactions = async ({ date, startDate, endDate }) => {
   return transactionRepository.listTransactionsByDate({ date, startDate, endDate });
 };
 
+const getTransactionItems = async (id) => {
+  const transaction = await transactionRepository.getTransactionById(id);
+  if (!transaction) {
+    throw new Error('NOT_FOUND');
+  }
+  return transactionRepository.getItemsByTransactionId(id);
+};
+
 module.exports = {
   createTransaction,
   voidTransaction,
   getTransactions,
-  hardDeleteTransaction
+  hardDeleteTransaction,
+  getTransactionItems
 };

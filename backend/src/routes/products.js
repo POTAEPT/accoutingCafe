@@ -16,6 +16,11 @@ async function productRoutes(fastify, options) {
     preHandler: authenticate,
     handler: productController.updateProduct
   });
+
+  fastify.delete('/api/products/:id', {
+    preHandler: authenticate,
+    handler: productController.deleteProduct
+  });
 }
 
 module.exports = productRoutes;
