@@ -12,6 +12,7 @@
             margin: 40px; 
             color: #333; 
         }
+        body, table, th, td { font-family: 'Sarabun', sans-serif !important; }
         .header { text-align: center; margin-bottom: 30px; }
         .info { margin-bottom: 20px; line-height: 1.6; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -45,15 +46,15 @@
                 <td><%= index + 1 %></td>
                 <td class="text-left"><%= item.display_name || item.product_name %></td>
                 <td><%= item.quantity %></td>
-                <td><%= item.unit_price %></td>
-                <td><%= item.subtotal %></td>
+                <td><%= Number(item.unit_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                <td><%= Number(item.subtotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
             </tr>
             <% }); %>
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="4" class="text-right"><b>รวมทั้งสิ้น</b></td>
-                <td><b><%= total_amount %></b></td>
+                <td><b><%= Number(total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></b></td>
             </tr>
         </tfoot>
     </table>

@@ -32,7 +32,7 @@ const normalizePrices = (prices) => {
 };
 
 const createProduct = async (request, reply) => {
-  const { name, category, prices, has_sweetness, allow_roast, allow_addons, is_active } = request.body || {};
+  const { name, category, prices, has_sweetness, allow_roast, allow_addons, is_cup, is_active } = request.body || {};
   const normalizedPrices = normalizePrices(prices);
 
   if (!name || !category || !normalizedPrices) {
@@ -47,6 +47,7 @@ const createProduct = async (request, reply) => {
       has_sweetness: has_sweetness === undefined ? true : Boolean(has_sweetness),
       allow_roast: allow_roast === undefined ? true : Boolean(allow_roast),
       allow_addons: allow_addons === undefined ? true : Boolean(allow_addons),
+      is_cup: is_cup === undefined ? true : Boolean(is_cup),
       is_active: is_active === undefined ? true : Boolean(is_active)
     });
     return reply.code(201).send({ data: product });
@@ -60,7 +61,7 @@ const createProduct = async (request, reply) => {
 
 const updateProduct = async (request, reply) => {
   const { id } = request.params || {};
-  const { name, category, prices, has_sweetness, allow_roast, allow_addons, is_active } = request.body || {};
+  const { name, category, prices, has_sweetness, allow_roast, allow_addons, is_cup, is_active } = request.body || {};
 
   if (!id) {
     return reply.code(400).send({ error: 'ไม่พบรหัสสินค้า' });
@@ -79,6 +80,7 @@ const updateProduct = async (request, reply) => {
       has_sweetness,
       allow_roast,
       allow_addons,
+      is_cup,
       is_active
     });
 

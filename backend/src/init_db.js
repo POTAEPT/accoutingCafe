@@ -30,6 +30,7 @@ const initDB = async () => {
       product_name VARCHAR(255) NOT NULL,
       product_variant VARCHAR(20),
       sweetness VARCHAR(20),
+      is_cup BOOLEAN DEFAULT TRUE,
       quantity INT NOT NULL,
       unit_price DECIMAL(10,2) NOT NULL,
       subtotal DECIMAL(10,2) NOT NULL
@@ -39,6 +40,8 @@ const initDB = async () => {
   const migrateTransactionItemsQuery = `
     ALTER TABLE transaction_items ADD COLUMN IF NOT EXISTS product_variant VARCHAR(20);
     ALTER TABLE transaction_items ADD COLUMN IF NOT EXISTS sweetness VARCHAR(20);
+    ALTER TABLE transaction_items ADD COLUMN IF NOT EXISTS is_cup BOOLEAN DEFAULT TRUE;
+    UPDATE transaction_items SET is_cup = TRUE WHERE is_cup IS NULL;
   `;
 
   const createProductsTableQuery = `
@@ -50,6 +53,7 @@ const initDB = async () => {
       has_sweetness BOOLEAN DEFAULT TRUE,
       allow_roast BOOLEAN DEFAULT TRUE,
       allow_addons BOOLEAN DEFAULT TRUE,
+      is_cup BOOLEAN DEFAULT TRUE,
       is_active BOOLEAN DEFAULT TRUE
     );
   `;
@@ -59,6 +63,7 @@ const initDB = async () => {
     ALTER TABLE products ADD COLUMN IF NOT EXISTS has_sweetness BOOLEAN DEFAULT TRUE;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS allow_roast BOOLEAN DEFAULT TRUE;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS allow_addons BOOLEAN DEFAULT TRUE;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS is_cup BOOLEAN DEFAULT TRUE;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
     DO $$
     BEGIN
@@ -72,6 +77,7 @@ const initDB = async () => {
       END IF;
     END $$;
     ALTER TABLE products DROP COLUMN IF EXISTS price;
+      UPDATE products SET is_cup = TRUE WHERE is_cup IS NULL;
   `;
 
   const createAddonsTableQuery = `

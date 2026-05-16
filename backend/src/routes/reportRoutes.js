@@ -21,6 +21,7 @@ async function reportRoutes(fastify, options) {
       reply.header('Content-Disposition', `attachment; filename="Summary_${date}.pdf"`);
       return reply.send(pdfBuffer);
     } catch (err) {
+      console.error(err);
       fastify.log.error(err);
       return reply.code(500).send({ error: 'System error' });
     }
@@ -40,6 +41,7 @@ async function reportRoutes(fastify, options) {
       reply.header('Content-Disposition', `attachment; filename="Period_${startDate}_to_${endDate}.pdf"`);
       return reply.send(pdfBuffer);
     } catch (err) {
+      console.error(err);
       fastify.log.error(err);
       return reply.code(500).send({ error: 'System error' });
     }

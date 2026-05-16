@@ -10,6 +10,7 @@
       margin: 40px;
       color: #333;
     }
+    body, table, th, td { font-family: 'Sarabun', sans-serif !important; }
     .header { text-align: center; margin-bottom: 28px; }
     .info { margin-bottom: 18px; line-height: 1.6; }
     h2 { margin: 0 0 8px; }
@@ -32,7 +33,8 @@
     <div class="info">
       <b>วันที่:</b> <%= reportDate %><br>
       <b>จำนวนรายการ:</b> <%= items.length %> รายการ<br>
-      <b>จำนวนรวมทั้งสิ้น:</b> <%= grandTotalQty %> แก้ว<br>
+      <b>ยอดขายเครื่องดื่มรวม:</b> <%= totalCups %> แก้ว<br>
+      <b>ยอดขายสินค้าอื่นๆ:</b> <%= totalOthers %> รายการ<br>
       <b>ผู้จัดทำ:</b> <%= generatedBy || '-' %>
     </div>
   </div>
@@ -49,7 +51,7 @@
       <% payments.forEach(function(payment) { %>
       <tr>
         <td class="text-left"><%= payment.payment_method %></td>
-        <td><%= payment.total %></td>
+        <td><%= payment.total_formatted || payment.total %></td>
       </tr>
       <% }); %>
     </tbody>
@@ -66,7 +68,7 @@
     <thead>
       <tr>
         <th class="text-left">เมนู</th>
-        <th>จำนวนแก้ว</th>
+        <th>จำนวน (รายการ/แก้ว)</th>
         <th>ยอดรวม (บาท)</th>
       </tr>
     </thead>
@@ -74,15 +76,15 @@
       <% items.forEach(function(item) { %>
       <tr>
         <td class="text-left"><%= item.product_name %></td>
-        <td><%= item.total_qty %></td>
-        <td><%= item.total_amount %></td>
+        <td><%= item.total_qty_all %></td>
+        <td><%= item.total_amount_formatted || item.total_amount %></td>
       </tr>
       <% }); %>
     </tbody>
     <tfoot>
       <tr>
         <td class="text-right total">รวมทั้งสิ้น</td>
-        <td class="total"><%= grandTotalQty %> แก้ว</td>
+        <td class="total"><%= totalUnits %> รายการ</td>
         <td class="total"><%= grandTotal %> บาท</td>
       </tr>
     </tfoot>

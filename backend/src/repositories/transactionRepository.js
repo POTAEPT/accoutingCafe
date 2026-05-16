@@ -43,14 +43,15 @@ const insertTransaction = async (db, { receipt_no, total_amount, payment_method,
 
 const insertTransactionItem = async (db, item) => {
   const insertItemQuery = `
-    INSERT INTO transaction_items (transaction_id, product_name, product_variant, sweetness, quantity, unit_price, subtotal)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    INSERT INTO transaction_items (transaction_id, product_name, product_variant, sweetness, is_cup, quantity, unit_price, subtotal)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
   `;
   await db.query(insertItemQuery, [
     item.transaction_id,
     item.product_name,
     item.product_variant,
     item.sweetness,
+    item.is_cup,
     item.quantity,
     item.unit_price,
     item.subtotal
@@ -73,7 +74,7 @@ const listTransactionsByDate = async ({ date, startDate, endDate }) => {
   if (startDate && endDate) {
     const result = await pool.query(
       `
-        SELECT t.*, COALESCE(SUM(ti.quantity), 0) AS total_qty
+        SELECT t.*, COALESCE(SUM(CASE WHEN ti.is_cup THEN ti.quantity ELSE 0 END), 0) AS total_qty
         FROM transactions t
         LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
         WHERE DATE(t.created_at) BETWEEN $1 AND $2
@@ -88,7 +89,7 @@ const listTransactionsByDate = async ({ date, startDate, endDate }) => {
   if (date) {
     const result = await pool.query(
       `
-        SELECT t.*, COALESCE(SUM(ti.quantity), 0) AS total_qty
+        SELECT t.*, COALESCE(SUM(CASE WHEN ti.is_cup THEN ti.quantity ELSE 0 END), 0) AS total_qty
         FROM transactions t
         LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
         WHERE DATE(t.created_at) = $1
@@ -102,7 +103,7 @@ const listTransactionsByDate = async ({ date, startDate, endDate }) => {
 
   const result = await pool.query(
     `
-      SELECT t.*, COALESCE(SUM(ti.quantity), 0) AS total_qty
+      SELECT t.*, COALESCE(SUM(CASE WHEN ti.is_cup THEN ti.quantity ELSE 0 END), 0) AS total_qty
       FROM transactions t
       LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
       GROUP BY t.id

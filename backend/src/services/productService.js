@@ -8,7 +8,7 @@ const getAllProducts = async () => {
   return productRepository.listAllProducts();
 };
 
-const createProduct = async ({ name, category, prices, has_sweetness, allow_roast, allow_addons, is_active }) => {
+const createProduct = async ({ name, category, prices, has_sweetness, allow_roast, allow_addons, is_cup, is_active }) => {
   return productRepository.createProduct({
     name,
     category,
@@ -16,6 +16,7 @@ const createProduct = async ({ name, category, prices, has_sweetness, allow_roas
     has_sweetness,
     allow_roast,
     allow_addons,
+    is_cup,
     is_active
   });
 };

@@ -45,6 +45,7 @@ const createTransaction = async ({ payment_method, items, record_date, manual_re
         product_name: item.product_name,
         product_variant: item.product_variant || null,
         sweetness: item.sweetness || null,
+        is_cup: item.is_cup === undefined ? true : Boolean(item.is_cup),
         quantity,
         unit_price,
         subtotal
@@ -65,6 +66,7 @@ const createTransaction = async ({ payment_method, items, record_date, manual_re
         product_name: item.product_name,
         product_variant: item.product_variant,
         sweetness: item.sweetness,
+        is_cup: item.is_cup,
         quantity: item.quantity,
         unit_price: item.unit_price,
         subtotal: item.subtotal

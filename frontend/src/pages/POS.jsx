@@ -34,6 +34,7 @@ function POS() {
   const [selectedRoast, setSelectedRoast] = useState(DEFAULT_ROAST.id)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [customPrice, setCustomPrice] = useState('')
+  const [selectedBringOwnCup, setSelectedBringOwnCup] = useState(false)
   const [availableAddons, setAvailableAddons] = useState([])
   const [addonError, setAddonError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('CASH')
@@ -134,7 +135,7 @@ function POS() {
     }, 0)
   }
 
-  const buildOptionLabel = ({ variant, roastId, addons, sweetness }) => {
+  const buildOptionLabel = ({ variant, roastId, addons, sweetness, bringOwnCup }) => {
     const parts = []
     if (variant) {
       parts.push(getVariantReceiptLabel(variant))
@@ -153,6 +154,9 @@ function POS() {
     if (sweetness) {
       parts.push(`หวาน ${sweetness}%`)
     }
+    if (bringOwnCup) {
+      parts.push('นำแก้วมาเอง')
+    }
     return parts.join(', ')
   }
 
@@ -166,7 +170,8 @@ function POS() {
       variant: entry.variant,
       roastId: entry.roast,
       addons: entry.addons,
-      sweetness: entry.sweetness
+      sweetness: entry.sweetness,
+      bringOwnCup: entry.bringOwnCup
     })
   }
 
@@ -174,9 +179,9 @@ function POS() {
     return Boolean(product?.name?.includes('น้ำแข็ง'))
   }
 
-  const buildCartKey = (productId, variant, sweetness, roast, addons, price) => {
+  const buildCartKey = (productId, variant, sweetness, roast, addons, price, bringOwnCup) => {
     const addonKey = (addons || []).slice().sort().join('-') || 'none'
-    return `${productId}__${variant || 'regular'}__${sweetness || 'none'}__${roast || 'none'}__${addonKey}__${price || '0'}`
+    return `${productId}__${variant || 'regular'}__${sweetness || 'none'}__${roast || 'none'}__${addonKey}__${price || '0'}__${bringOwnCup ? 'owncup' : 'normal'}`
   }
 
   const addToCart = (entry) => {
@@ -207,6 +212,7 @@ function POS() {
     setSelectedRoast(allowRoast ? defaultRoast : '')
     setSelectedAddons([])
     setCustomPrice('')
+    setSelectedBringOwnCup(false)
   }
 
   const confirmVariant = () => {
@@ -216,17 +222,21 @@ function POS() {
     if (isIce) {
       const parsedPrice = Number(customPrice)
       if (!parsedPrice || parsedPrice <= 0) return
-
+      const finalUnitPrice = Math.max(0, parsedPrice - (selectedBringOwnCup ? 5 : 0))
+      const optionLabel = buildOptionLabel({ bringOwnCup: selectedBringOwnCup })
+      const displayName = buildDisplayName(selectedProduct.name, optionLabel)
       const entry = {
-        key: buildCartKey(selectedProduct.id, 'custom', '', '', [], parsedPrice),
+        key: buildCartKey(selectedProduct.id, 'custom', '', '', [], finalUnitPrice, selectedBringOwnCup),
         id: selectedProduct.id,
         baseName: selectedProduct.name,
-        displayName: selectedProduct.name,
+        displayName,
         variant: '',
         sweetness: '',
         roast: '',
         addons: [],
-        price: parsedPrice
+        is_cup: selectedProduct.is_cup !== false,
+        bringOwnCup: selectedBringOwnCup,
+        price: finalUnitPrice
       }
       addToCart(entry)
       setSelectedProduct(null)
@@ -241,18 +251,19 @@ function POS() {
     const roast = allowRoast ? getRoastOption(selectedRoast) : null
     const roastPrice = roast ? roast.price : 0
     const addonsPrice = allowAddons ? getAddonTotal(selectedAddons) : 0
-    const finalUnitPrice = Number(basePrice) + roastPrice + addonsPrice
+    const finalUnitPrice = Math.max(0, Number(basePrice) + roastPrice + addonsPrice - (selectedBringOwnCup ? 5 : 0))
     const sweetness = selectedProduct.has_sweetness ? selectedSweetness : ''
     const optionLabel = buildOptionLabel({
       variant: selectedVariant,
       roastId: allowRoast ? selectedRoast : '',
       addons: allowAddons ? selectedAddons : [],
-      sweetness
+      sweetness,
+      bringOwnCup: selectedBringOwnCup
     })
     const displayName = buildDisplayName(selectedProduct.name, optionLabel)
 
     const entry = {
-      key: buildCartKey(selectedProduct.id, selectedVariant, sweetness, selectedRoast, selectedAddons, finalUnitPrice),
+      key: buildCartKey(selectedProduct.id, selectedVariant, sweetness, selectedRoast, selectedAddons, finalUnitPrice, selectedBringOwnCup),
       id: selectedProduct.id,
       baseName: selectedProduct.name,
       displayName,
@@ -260,6 +271,8 @@ function POS() {
       sweetness,
       roast: allowRoast ? selectedRoast : '',
       addons: allowAddons ? selectedAddons : [],
+      is_cup: selectedProduct.is_cup !== false,
+      bringOwnCup: selectedBringOwnCup,
       price: Number(finalUnitPrice)
     }
     addToCart(entry)
@@ -285,7 +298,7 @@ function POS() {
   }, [cart])
 
   const totalQty = useMemo(() => {
-    return cart.reduce((sum, entry) => sum + entry.qty, 0)
+    return cart.reduce((sum, entry) => sum + (entry.is_cup ? entry.qty : 0), 0)
   }, [cart])
 
   const handleCheckout = async () => {
@@ -304,7 +317,8 @@ function POS() {
             quantity: entry.qty,
             unit_price: entry.price,
             product_variant: entry.variant,
-            sweetness: entry.sweetness
+            sweetness: entry.sweetness,
+            is_cup: entry.is_cup
           }
         })
       }
@@ -314,7 +328,12 @@ function POS() {
       setCart([])
       setStatus('✅ บันทึกยอดขายสำเร็จเรียบร้อย!')
     } catch (err) {
-      setStatus('❌ เกิดข้อผิดพลาด ไม่สามารถบันทึกได้ ลองเช็ค Console ดูครับ')
+      if (err?.response?.status === 409) {
+        alert('เซฟไม่ได้: เลขที่บิลนี้มีอยู่ในระบบแล้ว กรุณาเปลี่ยนเลขใหม่')
+        setStatus('❌ เลขที่บิลซ้ำ กรุณาเปลี่ยนเลขใหม่')
+      } else {
+        setStatus('❌ เกิดข้อผิดพลาด ไม่สามารถบันทึกได้ ลองเช็ค Console ดูครับ')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -473,6 +492,11 @@ function POS() {
                           <p className="mt-1 text-xs text-slate-500">
                             ตัวเลือก: {buildCartOptionLabel(entry)}
                           </p>
+                        ) : null}
+                        {entry.bringOwnCup ? (
+                          <span className="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+                            นำแก้วมาเอง (-฿5)
+                          </span>
                         ) : null}
                       </div>
                       <button
@@ -668,6 +692,15 @@ function POS() {
                       </div>
                     </div>
                   ) : null}
+
+                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={selectedBringOwnCup}
+                      onChange={(event) => setSelectedBringOwnCup(event.target.checked)}
+                    />
+                    นำแก้วมาเอง (-฿5)
+                  </label>
 
                   {selectedProduct.allow_roast !== false ? (
                     <div>

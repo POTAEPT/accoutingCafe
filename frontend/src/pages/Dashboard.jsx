@@ -74,6 +74,7 @@ function Dashboard() {
     has_sweetness: true,
     allow_roast: true,
     allow_addons: true,
+    is_cup: true,
     is_active: true,
     prices: {
       hot: '',
@@ -347,6 +348,7 @@ function Dashboard() {
       has_sweetness: true,
       allow_roast: true,
       allow_addons: true,
+      is_cup: true,
       is_active: true,
       prices: {
         hot: '',
@@ -376,6 +378,7 @@ function Dashboard() {
       has_sweetness: product.has_sweetness !== false,
       allow_roast: product.allow_roast !== false,
       allow_addons: product.allow_addons !== false,
+      is_cup: product.is_cup !== false,
       is_active: product.is_active !== false,
       prices: {
         hot: prices.hot ?? '',
@@ -424,6 +427,7 @@ function Dashboard() {
         has_sweetness: form.has_sweetness,
         allow_roast: form.allow_roast,
         allow_addons: form.allow_addons,
+        is_cup: form.is_cup,
         is_active: form.is_active
       }
 
@@ -608,6 +612,11 @@ function Dashboard() {
                             {product.allow_addons ? (
                               <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">Add-ons</span>
                             ) : null}
+                            {product.is_cup ? (
+                              <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">นับเป็นแก้ว</span>
+                            ) : (
+                              <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">ไม่ใช่แก้ว</span>
+                            )}
                             {!product.has_sweetness && !product.allow_roast && !product.allow_addons ? (
                               <span className="text-xs text-slate-400">-</span>
                             ) : null}
@@ -881,6 +890,16 @@ function Dashboard() {
                       }
                     />
                     เปิดใช้งานตัวเลือกเพิ่มเติม / Add-ons
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={form.is_cup}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, is_cup: event.target.checked }))
+                      }
+                    />
+                    นับเป็นแก้ว (Count as Cup)
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-600">
                     <input

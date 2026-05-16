@@ -11,13 +11,17 @@ const getDailySummaryData = async (date) => {
   
   // 2. ดึงยอดขายแยกตามเมนูสินค้า
   const itemQuery = `
-    SELECT product_name, SUM(quantity) as total_qty, SUM(subtotal) as total_amount
+    SELECT product_name,
+      SUM(quantity) as total_qty_all,
+      SUM(CASE WHEN COALESCE(is_cup, TRUE) THEN quantity ELSE 0 END) as total_qty_cup,
+      SUM(CASE WHEN COALESCE(is_cup, TRUE) THEN 0 ELSE quantity END) as total_qty_other,
+      SUM(subtotal) as total_amount
     FROM transaction_items 
     WHERE transaction_id IN (
         SELECT id FROM transactions WHERE DATE(created_at) = $1 AND status = 'COMPLETED'
     )
     GROUP BY product_name
-    ORDER BY total_qty DESC
+    ORDER BY total_qty_all DESC
   `;
 
   const [payments, items] = await Promise.all([
@@ -40,13 +44,17 @@ const getPeriodSummaryData = async (startDate, endDate) => {
   `;
 
   const itemQuery = `
-    SELECT product_name, SUM(quantity) as total_qty, SUM(subtotal) as total_amount
+    SELECT product_name,
+      SUM(quantity) as total_qty_all,
+      SUM(CASE WHEN COALESCE(is_cup, TRUE) THEN quantity ELSE 0 END) as total_qty_cup,
+      SUM(CASE WHEN COALESCE(is_cup, TRUE) THEN 0 ELSE quantity END) as total_qty_other,
+      SUM(subtotal) as total_amount
     FROM transaction_items
     WHERE transaction_id IN (
         SELECT id FROM transactions WHERE DATE(created_at) BETWEEN $1 AND $2 AND status = 'COMPLETED'
     )
     GROUP BY product_name
-    ORDER BY total_qty DESC
+    ORDER BY total_qty_all DESC
   `;
 
   const [payments, items] = await Promise.all([
