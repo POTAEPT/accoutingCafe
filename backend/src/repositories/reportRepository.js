@@ -68,4 +68,37 @@ const getPeriodSummaryData = async (startDate, endDate) => {
   };
 };
 
-module.exports = { getDailySummaryData, getPeriodSummaryData };
+const getBatchReceiptsData = async (startDate, endDate) => {
+  const transactionsQuery = `
+    SELECT *
+    FROM transactions
+    WHERE DATE(created_at) BETWEEN $1 AND $2 AND status = 'COMPLETED'
+    ORDER BY receipt_no ASC
+  `;
+
+  const transactionsResult = await pool.query(transactionsQuery, [startDate, endDate]);
+  const transactions = transactionsResult.rows || [];
+  if (!transactions.length) {
+    return { transactions: [], itemsByTransactionId: {} };
+  }
+
+  const transactionIds = transactions.map((transaction) => transaction.id);
+  const itemsQuery = `
+    SELECT *
+    FROM transaction_items
+    WHERE transaction_id = ANY($1::uuid[])
+    ORDER BY transaction_id, id
+  `;
+  const itemsResult = await pool.query(itemsQuery, [transactionIds]);
+  const itemsByTransactionId = itemsResult.rows.reduce((acc, item) => {
+    if (!acc[item.transaction_id]) {
+      acc[item.transaction_id] = [];
+    }
+    acc[item.transaction_id].push(item);
+    return acc;
+  }, {});
+
+  return { transactions, itemsByTransactionId };
+};
+
+module.exports = { getDailySummaryData, getPeriodSummaryData, getBatchReceiptsData };

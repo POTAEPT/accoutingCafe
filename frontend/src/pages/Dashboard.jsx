@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Edit, Plus, Save, Trash2 } from 'lucide-react'
-import { deleteTransaction, downloadDailySummary, downloadPeriodSummary, downloadReceipt, getTransactionItems, getTransactions, voidTransaction } from '../api/reports'
+import { deleteTransaction, downloadBatchReceipts, downloadDailySummary, downloadPeriodSummary, downloadReceipt, getTransactionItems, getTransactions, voidTransaction } from '../api/reports'
 import { createProduct, deleteProduct, getProducts, updateProduct } from '../api/products'
 import { createAddon, deleteAddon, getAddons, updateAddon } from '../api/addons'
 
@@ -179,6 +179,14 @@ function Dashboard() {
     return next
   }, [transactions, sortConfig])
 
+  const previewIndex = useMemo(() => {
+    if (!previewTransaction) return -1
+    return sortedTransactions.findIndex((item) => item.id === previewTransaction.id)
+  }, [previewTransaction, sortedTransactions])
+
+  const canGoPrev = previewIndex > 0
+  const canGoNext = previewIndex > -1 && previewIndex < sortedTransactions.length - 1
+
   const openAddonCreateModal = () => {
     setAddonMode('create')
     setAddonErrors({ name: '', category: '', price: '' })
@@ -264,6 +272,11 @@ function Dashboard() {
     await downloadPeriodSummary(rangeStart, rangeEnd)
   }
 
+  const handleBatchReceipts = async () => {
+    if (!rangeStart || !rangeEnd) return
+    await downloadBatchReceipts(rangeStart, rangeEnd)
+  }
+
   const handleReceiptDownload = async (receiptNo) => {
     if (!receiptNo) return
     await downloadReceipt(receiptNo)
@@ -283,7 +296,7 @@ function Dashboard() {
     await loadTransactions(rangeStart, rangeEnd)
   }
 
-  const handlePreviewTransaction = async (transaction) => {
+  const handlePreviewTransaction = useCallback(async (transaction) => {
     if (!transaction) return
     setPreviewTransaction(transaction)
     setPreviewItems([])
@@ -296,13 +309,41 @@ function Dashboard() {
     } finally {
       setPreviewLoading(false)
     }
-  }
+  }, [])
+
+  const handlePreviewNavigation = useCallback(async (direction) => {
+    if (previewIndex === -1) return
+    const nextIndex = previewIndex + direction
+    if (nextIndex < 0 || nextIndex >= sortedTransactions.length) return
+    await handlePreviewTransaction(sortedTransactions[nextIndex])
+  }, [previewIndex, sortedTransactions, handlePreviewTransaction])
 
   const closePreview = () => {
     setPreviewTransaction(null)
     setPreviewItems([])
     setPreviewLoading(false)
   }
+
+  useEffect(() => {
+    if (!previewTransaction) return
+    const handleKeyDown = (event) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        if (canGoPrev) {
+          handlePreviewNavigation(-1)
+        }
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        if (canGoNext) {
+          handlePreviewNavigation(1)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [previewTransaction, canGoPrev, canGoNext, handlePreviewNavigation])
 
   const buildPricesPayload = (nextForm) => {
     const prices = {}
@@ -495,6 +536,12 @@ function Dashboard() {
               className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-blue-100 transition hover:bg-blue-700"
             >
               Export Period Summary PDF
+            </button>
+            <button
+              onClick={handleBatchReceipts}
+              className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-slate-200 transition hover:bg-slate-800"
+            >
+              พิมพ์บิลทั้งหมด (Batch Receipts)
             </button>
           </div>
         </div>
@@ -1180,17 +1227,36 @@ function Dashboard() {
       {previewTransaction ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
           <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-lg font-semibold">รายละเอียดบิล</h3>
                 <p className="text-sm text-slate-500">Receipt No: {previewTransaction.receipt_no}</p>
+                <p className="text-xs text-slate-400">
+                  {previewIndex > -1 ? `รายการที่ ${previewIndex + 1} จาก ${sortedTransactions.length}` : 'ไม่พบรายการนี้ในตาราง'}
+                </p>
               </div>
-              <button
-                onClick={closePreview}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePreviewNavigation(-1)}
+                  disabled={!canGoPrev || previewLoading}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  ก่อนหน้า
+                </button>
+                <button
+                  onClick={() => handlePreviewNavigation(1)}
+                  disabled={!canGoNext || previewLoading}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  ถัดไป
+                </button>
+                <button
+                  onClick={closePreview}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2 text-sm text-slate-600">
@@ -1238,7 +1304,20 @@ function Dashboard() {
                           {item.product_name}
                         </td>
                         <td className="py-2 px-2 text-slate-500">
-                          {extractOptionsFromName(item.product_name) || getVariantLabel(item.product_variant) || '-'}
+                          <div className="space-y-1">
+                            <p>
+                              <span className="text-xs uppercase tracking-[0.2em] text-slate-300">ประเภท</span>
+                              <span className="ml-2 font-semibold text-slate-600">
+                                {getVariantLabel(item.product_variant) || '-'}
+                              </span>
+                            </p>
+                            <p>
+                              <span className="text-xs uppercase tracking-[0.2em] text-slate-300">ตัวเลือก</span>
+                              <span className="ml-2 font-semibold text-slate-600">
+                                {extractOptionsFromName(item.product_name) || '-'}
+                              </span>
+                            </p>
+                          </div>
                         </td>
                         <td className="py-2 px-2 text-slate-500">
                           {item.sweetness ? `หวาน ${item.sweetness}%` : '-'}

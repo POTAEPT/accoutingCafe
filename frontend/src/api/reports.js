@@ -50,6 +50,14 @@ export const downloadPeriodSummary = async (startDate, endDate) => {
   downloadBlob(response.data, `Period_${startDate}_to_${endDate}.pdf`)
 }
 
+export const downloadBatchReceipts = async (startDate, endDate) => {
+  const response = await api.get('/reports/batch-receipts', {
+    params: { startDate, endDate },
+    responseType: 'blob'
+  })
+  downloadBlob(response.data, `batch_receipts_${startDate}_to_${endDate}.pdf`)
+}
+
 export const voidTransaction = async (id) => {
   const response = await api.patch(`/transactions/${id}/void`)
   return response.data
